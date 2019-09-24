@@ -1,0 +1,202 @@
+学习方法：记笔记
+一，环境准备
+	1.设置静态IP，
+		1）如果是新克隆的虚拟机就要重新生成mac地址
+		2）查看网关
+		3）修改：
+			cd /etc/sysconfig/network-scripts/
+			ll
+			vi ifcfg-ens33
+				BOOTPROTO="static"         # 使用静态IP地址，默认为dhcp
+				IPADDR="192.168.72.11"   # 设置的静态IP地址
+				NETMASK="255.255.255.0"    # 子网掩码
+				GATEWAY="192.168.72.2"    # 网关地址
+				DNS1="192.168.72.2"       # DNS服务器
+				ONBOOT="yes"
+			:wq	:x	:q	:q!
+			systemctl restart network
+			ifconfig/ip add
+			ping www.baidu.com
+
+	2.可以连接外网ping www.baidu.com
+		解决办法：
+			查看网关，
+			查看文件ifcfg-ens33,
+			错误文件：ll -a .ifcfg-ens33.swp  rm xxxx
+			重启网络服务，
+			重启虚拟机
+	3.安装客户端
+		注意：所有操作都要以管理员身份运行（安装、破解、启动）
+	
+二，虚拟化
+	1.桥接模式:虚拟机占用主机局域网IP地址
+	2.host-only模式：不能连外网
+	3.NAT模式：虚拟机不占用主机局域网IP地址
+		vmware dhcp service |vmware nat service
+三，克隆
+	1.完全克隆
+	2.链接克隆
+	注意：1）新克隆的虚拟机不要先启动，要先修改MAC地址
+		2）启动虚拟机，修改主机名和IP
+	
+
+	
+四，ssh免密登陆
+	1.ssh-keygen -t rsa(dsa) 4次回车
+	2.ssh-copy-id xxxx
+	3.ssh root@xxx
+作业：
+	1.三台虚拟机之间实现免密登陆，文件上传下载
+	2.Linux进阶，shell编程预习
+	
+五，Linux进阶
+	1.grep
+	2.su
+		su 切换用户，有root用户切换到一般用户，不用输入密码，反之要输入密码。
+		su - username 切换用户，并且切换到用户的家目录
+	3.sudo
+		sudo原理：sudo首先到/etc/sudoers中找注册权限，找到权限就可以执行，否则不可以。
+		visudo:编辑权限文件
+		wangguozhan  ALL=(ALL)       ALL
+		wangguozhan  cs-1=NOPASSWORD: /bin/ls,/bin/cat
+	4.systemctl
+		systemctl –查看系统中后台服务进程
+		systemctl status sshd.service—查看指定服务进程状态
+		systemctl stop sshd.service—停止服务
+		systmectl start sshd.service—启动服务
+		systemctl restart sshd.service—重启服务
+		systemctl disable sshd.service—开机禁止启动
+		systemctl  enable sshd.service—开机启动
+		systemctl is-enalbled sshd.service—查看是否开机启动
+	5.静态IP设置
+		1）安装虚拟机时候设置
+		2）安装虚拟机后修改ifcfg-ens33信息
+		3）nmtui命令，使用对话框方式修改
+	
+	6.IP，主机名映射
+		/etc/hosts
+		192.168.72.11 bigdata-1
+	
+	7.netstat -nlpt
+	8.httpd
+	9.crontab
+		1)安装 yum install crontabs
+		2)启动 systemctl start crond.service
+		3)crontab -e -r 
+		
+	练习：练习shell运算，shell流程控制，shell函数
+	
+六，docker
+	1.安装docker  yum install docker
+	2.启动docker  systemctl start docker
+	3.开机启动   systemctl enable docker
+	4.查找镜像   docker search centos
+	5.查找镜像-根据stars过滤
+		docker search centos -s 100
+		docker search centos --filter stars=100
+	6.下载镜像 docker pull centos
+	7.查看镜像 docker images
+	8.启动镜像 docker run -t -i xxx  /bin/bash
+	9.查看启动的容器  docker  ps
+	10.查看所有的容器  docker ps -a
+	
+	镜像的上传下载：
+	1.申请账号：https://hub.docker.com/   账号dockerlaowang
+	2.创建仓库：create repository  设置为public
+	3.修改镜像的名字，前缀必须是你的账号
+		my/sinatra:v1  --->dockerlaowang/sinatra:v2
+		docker tag my/sinatra:v1  dockerlaowang/sinatra:v2
+	4.上传镜像
+		docker  push dockerlaowang/sinatra:v2
+		
+	5.下载镜像
+		docker pull dockerlaowang/sinatra
+		
+	镜像的保存和加载
+	1.保存
+		docker save -o my_centos.tar.gz dockerlaowang/centos
+	2.加载
+		docker load < my_centos.tar.gz
+		docker load --input my_centos.tar.gz
+		
+	镜像的删除
+	1.删除
+		docker rmi image_id
+		docker rmi -f image_id
+		
+	容器的运行
+	1.docker run -t -i xxx /bin/bash
+	2.docker start cid
+	3.docker stop cid
+	4.docker restart cid
+	5.后台运行
+		docker run -d xxx /bin/bash -c "linux 命令"
+	6.查看日志
+		docker  logs cid
+	
+	容器的后台运行
+	1.attach
+		docker run -itd xxx /bin/bash
+		docker attach xxx
+	2.nsenter
+		1)下载nsenter:wget https://www.kernel.org/pub/linux/utils/util-linux/v2.24/util-linux-2.24.tar.gz
+		2)解压：tar -zxvf util-linux-2.24.tar.gz
+		3)切换到根目录：cd util-linux-2.24
+		4)编译：
+			先安装gcc
+			再编译：./configure --without-ncurses && make nsenter
+		5)拷贝nsenter脚本到用户bin目录
+			cp nsenter /usr/local/bin
+		6)获取容器的PID
+			docker inspect cid
+			docker inspect -f {{.State.Pid}} cid
+		7)根据pid和容器交互
+			nsenter --target 获取的pid --mount --uts --ipc --net --pid
+			
+			
+	面试题：和后台运行的容器交互的方式有几种？
+	
+	容器的导出:
+		docker export cid > xxx.tar.gz
+		缺点：会丢失一部分数据-历史信息及元数据
+	
+	容器的导入
+		cat xxx.tar.gz |docker import - xxx.tar.gz
+	
+	容器的删除
+		docker rm cid
+		docker rm -f cid
+	
+	私有仓库的搭建
+	1.查找私有仓库工具
+		docker search registry
+	2.下载
+		docker pull registry
+	3.配置私有仓库
+		
+	4.运行容器
+		docker run -d -p 5000:5000 -v /root/docker/registry:/tmp/registry registry
+	5.修改镜像
+		my/sinatra:v1--->192.168.72.14:5000/sinatra:v1
+		
+		docker tag my/sinatra:v1 192.168.72.14:5000/sinatra:v1
+	6.上传镜像
+		docker push 192.168.72.14:5000/sinatra:v1
+		
+	7.下载镜像
+		docker pull 192.168.72.14:5000/sinatra:v1
+		
+		
+	数据卷
+	1.默认情况，数据卷存在于容器中
+	82524d8c228c
+		docker run -it -P -d --name data1 -v /datas my/centos:v1.1 /bin/bash
+	2.运行另外一个容器，共享数据卷/datas
+		docker run  -itd --volumes-from data1 docker.io/centos /bin/bash
+		#进入容器，
+	    docker attach d8ac45209a1e 
+		#在/datas目录新建文件1.txt	
+		/datas/1.txt 11111
+	3.共享数据卷
+		进入第一个容器,在datas目录发现数据是共享的
+		
